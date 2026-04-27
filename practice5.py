@@ -92,6 +92,7 @@ def main():
                 student["GPA"],
             )
 
+
         print("Total students:", len(students))
         print("Top 10 Students by Final Exam Score:")
 
