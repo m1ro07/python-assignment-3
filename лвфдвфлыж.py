@@ -6,22 +6,20 @@ import os
 DEFAULT_INPUT_FILE = "students.csv"
 FALLBACK_INPUT_FILE = "/Users/market/Downloads/global_university_students_performance_habits_10000.csv"
 OUTPUT_FOLDER = "output"
-OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "result.json")
+OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "practice5_result.json")
 
 
 def valid_student(student):
     return student["final_exam_score"] >= 0
 
-
 def score_key(student):
     return student["final_exam_score"]
-
 
 def add_rank(item):
     rank = item[0]
     student = item[1]
 
-    return {
+    return{
         "rank": rank,
         "student_id": student["student_id"],
         "country": student["country"],
@@ -37,7 +35,7 @@ class FileManager:
         self.output_folder = output_folder
 
     def get_input_file(self):
-        print("FileManager: checking CSV file...")
+        print("FileManager: Checking CSV file...")
 
         if os.path.exists(self.input_file):
             print("CSV file found:", self.input_file)
@@ -51,19 +49,18 @@ class FileManager:
 
     def create_output_folder(self):
         print("FileManager: creating output folder if needed...")
-        os.makedirs(self.output_folder, exist_ok=True)
+        os.makedirs(self.output_folder, exist_ok = True)
         print("Output folder is ready:", self.output_folder)
-
 
 class DataLoader:
     def __init__(self, input_file):
         self.input_file = input_file
 
     def load_data(self):
-        print("DataLoader: reading CSV file...")
+        print("DataLoader: reading SCV file...")
         students = []
 
-        with open(self.input_file, "r", encoding="utf-8", newline="") as file:
+        with open(self.input_file, "r", encoding = "utf-8", newline ="") as file:
             reader = csv.DictReader(file)
             print("CSV columns:", reader.fieldnames)
 
@@ -71,65 +68,50 @@ class DataLoader:
                 students.append(
                     {
                         "student_id": row["student_id"],
-                        "age": int(row["age"]),
+                        "age": row["age"],
                         "gender": row["gender"],
                         "country": row["country"],
                         "major": row["major"],
-                        "GPA": float(row["GPA"]),
-                        "final_exam_score": float(row["final_exam_score"]),
+                        "GPA": row["GPA"],
+                        "final_exam_score": row["final_exam_score"],
                     }
                 )
-
-        print("Data loaded successfully.")
-        print("Rows loaded:", len(students))
-        return students
-
-    def preview_data(self, students, n=5):
-        print(f"First {n} students:")
+            print("Data loaded successfully.")
+            print("Rows loaded:", len(students))
+            return students
+    def preview_data(self, students, n = 5):
+        print(f'First {n} students:')
 
         for student in students[:n]:
             print(
-                f'ID: {student["student_id"]}, '
-                f'Age: {student["age"]}, '
-                f'Gender: {student["gender"]}, '
-                f'Country: {student["country"]}, '
-                f'Major: {student["major"]}, '
-                f'GPA: {student["GPA"]}, '
+                f'ID: {student["student_id"]}',
+                f'Age: {student["age"]}',
+                f'Gender: {student["gender"]}',
+                f'Country: {student["country"]}',
+                f'Major: {student["major"]}',
+                f'GPA: {student["GPA"]}',
                 f'Final Exam Score: {student["final_exam_score"]}'
             )
-
 
 class DataAnalyser:
     def __init__(self, students):
         self.students = students
 
     def analyse(self):
-        print("DataAnalyser: running Variant D analysis...")
-        print("Analysis logic: sort students by final_exam_score in descending order.")
         valid_students = list(filter(valid_student, self.students))
-        print("Students with valid final exam score:", len(valid_students))
-
-        sorted_students = sorted(valid_students, key=score_key, reverse=True)
-        top_students = list(map(add_rank, enumerate(sorted_students[:10], start=1)))
-        print("Top students selected:", len(top_students))
+        sorted_students = sorted(valid_students, key = score_key, reverse = True)
+        top_students = list(map(add_rank, enumerate(sorted_students[:10], start = 1)))
+        print(len(top_students))
         return top_students, len(valid_students)
-
 
 class ResultSaver:
     def __init__(self, output_file):
         self.output_file = output_file
-
     def save_to_json(self, result):
-        print("ResultSaver: saving analysis result to JSON...")
-
-        with open(self.output_file, "w", encoding="utf-8") as file:
-            json.dump(result, file, indent=4)
-
-        print("JSON file saved to:", self.output_file)
-
+        with open(self.output_file, "w", encoding = "utf-8") as file:
+            json.dump(result, file, indent = 4)
 
 def print_top_students(top_students):
-    print("Top 10 Students by Final Exam Score:")
 
     for student in top_students:
         print(
@@ -156,7 +138,7 @@ def main():
             FALLBACK_INPUT_FILE,
             OUTPUT_FOLDER,
         )
-        input_file = file_manager.get_input_file()
+        input_file = file.manager.get_input_file()
         file_manager.create_output_folder()
 
         data_loader = DataLoader(input_file)
@@ -164,36 +146,6 @@ def main():
         data_loader.preview_data(students)
 
         data_analyser = DataAnalyser(students)
-        top_10_students, valid_students_count = data_analyser.analyse()
+        top_10_students, valid_student_countr = data_analyser.analyse()
 
-        result = {
-            "practice": "Practice 6",
-            "variant": "D",
-            "analysis_task": "Top 10 students by final exam score",
-            "students_processed": len(students),
-            "valid_students_after_filter": valid_students_count,
-            "top_10_students": top_10_students,
-        }
 
-        result_saver = ResultSaver(OUTPUT_FILE)
-        result_saver.save_to_json(result)
-
-        print("=" * 60)
-        print("Final Output")
-        print("Dataset:", os.path.basename(input_file))
-        print("Total students:", len(students))
-        print("Students after filter:", valid_students_count)
-        print("Classes used: FileManager, DataLoader, DataAnalyser, ResultSaver")
-        print("Output file:", OUTPUT_FILE)
-        print_top_students(top_10_students)
-        print("Program finished successfully.")
-        print("=" * 60)
-
-    except FileNotFoundError as error:
-        print("File error:", error)
-    except ValueError as error:
-        print("Data conversion error:", error)
-    except KeyError as error:
-        print("Missing column in CSV file:", error)
-    except Exception as error:
-        print("Unexpected error:", error)

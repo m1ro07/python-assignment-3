@@ -3,115 +3,141 @@ import json
 import os
 
 
-INPUT_FILE = "/Users/market/Downloads/global_university_students_performance_habits_10000.csv"
-OUTPUT_FOLDER = "/Users/market/Documents/New project/output"
-OUTPUT_FILE = "/Users/market/Documents/New project/output/result.json"
+DEFAULT_INPUT_FILE = "students.csv"
+FALLBACK_INPUT_FILE = "/Users/market/Downloads/global_university_students_performance_habits_10000.csv"
+OUTPUT_FOLDER = "output"
+OUTPUT_FILE = os.path.join(OUTPUT_FOLDER, "practice5_result.json")
 
 
-def load_students(file_path):
+def get_input_file():
+    if os.path.exists(DEFAULT_INPUT_FILE):
+        return DEFAULT_INPUT_FILE
+
+    if os.path.exists(FALLBACK_INPUT_FILE):
+        return FALLBACK_INPUT_FILE
+
+    raise FileNotFoundError("CSV file not found.")
+
+
+def load_students(input_file):
     students = []
 
-    with open(file_path, "r", encoding="utf-8", newline="") as file:
+    with open(input_file, "r", encoding="utf-8", newline="") as file:
         reader = csv.DictReader(file)
 
         for row in reader:
-            student = {
-                "student_id": row["student_id"],
-                "age": row["age"],
-                "gender": row["gender"],
-                "country": row["country"],
-                "major": row["major"],
-                "GPA": float(row["GPA"]),
-                "final_exam_score": float(row["final_exam_score"]),
-            }
-            students.append(student)
+            students.append(
+                {
+                    "student_id": row["student_id"],
+                    "age": int(row["age"]),
+                    "gender": row["gender"],
+                    "country": row["country"],
+                    "major": row["major"],
+                    "GPA": float(row["GPA"]),
+                    "final_exam_score": float(row["final_exam_score"]),
+                }
+            )
 
     return students
 
 
+def valid_student(student):
+    return student["final_exam_score"] >= 0
+
+
+def score_key(student):
+    return student["final_exam_score"]
+
+
+def add_rank(item):
+    rank = item[0]
+    student = item[1]
+
+    return {
+        "rank": rank,
+        "student_id": student["student_id"],
+        "country": student["country"],
+        "major": student["major"],
+        "GPA": student["GPA"],
+        "final_exam_score": student["final_exam_score"],
+    }
+
+
 def get_top_students(students, n=10):
-    sorted_students = sorted(
-        students,
-        key=lambda student: student["final_exam_score"],
-        reverse=True,
-    )
+    valid_students = list(filter(valid_student, students))
+    sorted_students = sorted(valid_students, key=score_key, reverse=True)
+    top_students = list(map(add_rank, enumerate(sorted_students[:n], start=1)))
+    return top_students, len(valid_students)
 
-    top_students = []
 
-    for i, student in enumerate(sorted_students[:n], start=1):
-        top_students.append(
-            {
-                "rank": i,
-                "student_id": student["student_id"],
-                "country": student["country"],
-                "major": student["major"],
-                "GPA": student["GPA"],
-                "final_exam_score": student["final_exam_score"],
-            }
+def save_result(result, output_file):
+    with open(output_file, "w", encoding="utf-8") as file:
+        json.dump(result, file, indent=4)
+
+
+def print_preview(students, n=5):
+    print(f"First {n} students:")
+
+    for student in students[:n]:
+        print(
+            f'ID: {student["student_id"]}, '
+            f'Age: {student["age"]}, '
+            f'Gender: {student["gender"]}, '
+            f'Country: {student["country"]}, '
+            f'GPA: {student["GPA"]}'
         )
 
-    return top_students
 
+def print_top_students(top_students):
+    print("Top 10 Students by Final Exam Score:")
 
-def save_result(result, file_path):
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(result, file, indent=4)
+    for student in top_students:
+        print(
+            f'{student["rank"]}. '
+            f'ID: {student["student_id"]}, '
+            f'Country: {student["country"]}, '
+            f'Major: {student["major"]}, '
+            f'GPA: {student["GPA"]}, '
+            f'Final Exam Score: {student["final_exam_score"]}'
+        )
 
 
 def main():
     try:
-        if not os.path.exists(INPUT_FILE):
-            raise FileNotFoundError(f"File not found: {INPUT_FILE}")
+        print("Practice 5 - Variant D")
+        print("Task: get_top_students(students, n=10)")
 
+        input_file = get_input_file()
         os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-        students = load_students(INPUT_FILE)
-        top_10_students = get_top_students(students, 10)
+        students = load_students(input_file)
+        top_10_students, valid_students_count = get_top_students(students, 10)
 
         result = {
+            "practice": "Practice 5",
             "variant": "D",
-            "analysis_task": "Top 10 Students",
-            "ranking_basis": "final_exam_score",
+            "analysis_task": "Top 10 students by final exam score",
             "students_processed": len(students),
+            "valid_students_after_filter": valid_students_count,
             "top_10_students": top_10_students,
         }
 
         save_result(result, OUTPUT_FILE)
 
-        print("Practice 5 - Variant D")
-        print("Function: get_top_students(students, n=10)")
-        print("Dataset:", os.path.basename(INPUT_FILE))
-        print("First 5 students:")
-
-        for student in students[:5]:
-            print(
-                student["student_id"],
-                student["age"],
-                student["gender"],
-                student["country"],
-                student["GPA"],
-            )
-
-
+        print("Dataset:", os.path.basename(input_file))
+        print_preview(students)
         print("Total students:", len(students))
-        print("Top 10 Students by Final Exam Score:")
-
-        for student in top_10_students:
-            print(
-                f'{student["rank"]}. '
-                f'ID: {student["student_id"]}, '
-                f'Country: {student["country"]}, '
-                f'Major: {student["major"]}, '
-                f'GPA: {student["GPA"]}, '
-                f'Final Exam Score: {student["final_exam_score"]}'
-            )
-
+        print("Students after filter:", valid_students_count)
+        print("Functions used with filter, sorted, and map: valid_student, score_key, add_rank")
+        print_top_students(top_10_students)
         print("JSON file saved to:", OUTPUT_FILE)
 
     except FileNotFoundError as error:
-        print(error)
+        print("File error:", error)
     except ValueError as error:
         print("Data conversion error:", error)
+    except KeyError as error:
+        print("Missing column in CSV file:", error)
     except Exception as error:
         print("Unexpected error:", error)
 
